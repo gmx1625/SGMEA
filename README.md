@@ -10,5 +10,5 @@ ROOT
 ├── data
 │   └── mmkg
 └── code
-    └── MEAformer
+    └── SGMEA
 ```
