@@ -1,2 +1,0 @@
-from .SGMEA import SGMEA
-
