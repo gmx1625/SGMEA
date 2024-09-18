@@ -12,7 +12,7 @@ import pickle
 import torch.nn.functional as F
 import torch.distributed
 from tqdm import tqdm
-from sentence_transformers import SentenceTransformer
+
 from .utils import get_topk_indices, get_adjr
 import torch
 import random
@@ -138,46 +138,37 @@ def load_eva_data(logger, args):
     logger.info(f"relation feature shape:{rel_features.shape}")
     a1 = os.path.join(file_dir, 'att_triples1')
     a2 = os.path.join(file_dir, 'att_triples2')
-    #att_features = load_attr([a1, a2], ENT_NUM, ent2id_dict, 1000)  # attr
-
-    
-
+    #att_features = load_attr([a1, a2], ENT_NUM, ent2id_dict, 1000)  # att
 
     def split_camel_case(input_string):
         words = re.findall(r'[A-Z]?[a-z]+|[A-Z]+(?=[A-Z]|$)', input_string)
         return words
-
     def db_str(s):
         return ' '.join(split_camel_case(s[1:-1].split('/')[-1].replace('_', ' ')))
-
     def db_time(s):
         s = s.split("^^")[0][1:-1]
-        if re.match(r'^\d+(\.\d+)?$', s):  # 处理数值类型
+        if re.match(r'^\d+(\.\d+)?$', s):  
             return float(s)
 
-        if 'e' in s or 'E' in s:  # 处理科学计数法
+        if 'e' in s or 'E' in s:  
             return s
 
-        if '-' not in s[1:]:  # 非日期字符串
+        if '-' not in s[1:]:  
             return s
 
-        return s  # 直接返回日期字符串
-
+        return s 
 
     numericals = []
 
-    # 读取第一个文件的内容并添加到列表中
     with open(a1, 'r', encoding='utf-8') as f1:
         numericals.extend(f1.readlines())
 
-    # 读取第二个文件的内容并添加到列表中
     with open(a2, 'r', encoding='utf-8') as f2:
         numericals.extend(f2.readlines())
 
     Numericals = [i.split(' ') if '\t' not in i else i.split('\t') for i in numericals]
 
     if "DBP" in file_dir:
-        # 去除每个三元组第一部分的尖括号
         for triplet in Numericals:
             triplet[0] = triplet[0].strip('<>')
 
@@ -186,19 +177,16 @@ def load_eva_data(logger, args):
  
     num_entities = ENT_NUM
 
-    # 使用字典来聚合数据
+
     id_to_attributes = defaultdict(list)
 
-    # 将数值数据添加到字典中
     for id_, attr, value in Numericals:
         id_to_attributes[id_].append((attr, value))
 
-    # 确保所有实体都有条目
     for id_ in range(num_entities):
         if id_ not in id_to_attributes:
             id_to_attributes[id_] = []
 
-    # 将属性和值连接成字符串
     id_to_str = {}
     for id_, attr_values in id_to_attributes.items():
         if attr_values:
@@ -208,12 +196,12 @@ def load_eva_data(logger, args):
             id_to_str[id_] = ''
 
 
-            
-    # 加载BERT模型
-    model_path = '/home/2023/2023guomx/src/bert/bert/code/MEAformer-main/bert/sentence-transformers_LaBSE'        
-    model = SentenceTransformer(model_path).cuda()
+    from sentence_transformers import SentenceTransformer
+    from transformers import BertTokenizer, BertModel
+    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+    model = SentenceTransformer('sentence-transformers/LaBSE').cuda()
 
-    # 使用BERT提取特征
+
     outputs = []
     texts = [id_to_str[id_] for id_ in range(num_entities)]
     batch_size = 2048
@@ -224,34 +212,10 @@ def load_eva_data(logger, args):
             output = model.encode(sent_batch, convert_to_tensor=True)
         outputs.append(output)
 
-    # 将所有批次的输出连接起来
     outputs = torch.cat(outputs, dim=0)
 
-    # 转换为numpy数组
     att_features = outputs.cpu().numpy()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
     logger.info(f"attribute feature shape:{att_features.shape}")
 
     logger.info("-----dataset summary-----")
