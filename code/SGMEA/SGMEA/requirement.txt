@@ -1,0 +1,4 @@
+easydict
+unidecode
+tensorboard
+transformers==4.21.3
