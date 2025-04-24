@@ -15,7 +15,6 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 python  main.py \
 	        --csls          \
 	        --csls_k        3 \
 	        --random_seed   42 \
-            --exp_name      IJCAI_MEAformer_sf_$5_500-1000-IL \
             --exp_id        v1_$3_$4 \
             --workers       12 \
             --dist          0 \
